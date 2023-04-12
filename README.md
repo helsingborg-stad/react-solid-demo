@@ -1,38 +1,113 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# React SOLID Services example
 
-## Getting Started
+## Terminology
 
-First, run the development server:
+| Term                                 | Description                                                                                                                       |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| Service                              | Logical unit responsible for a single high-level functionality (e.g. HttpService, LogService, AuthService).                       |
+| Abstract Service / Service Interface | Contract to define and satisfy a Service (e.g. a HttpService must implement `get` and `post`).                                    |
+| Service Locator                      | An "address book" for finding instances of Services without knowing the instantiation and implementation details.                 |
+| (React) Hook                         | A function that connects an arbitrary Service with React's component lifecycles, enabling Service to indirectly refresh React UI. |
+| (React) Context / Provider           | Hierarchical dependency injection for React components.                                                                           |
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
+## Diagram
+
+```mermaid
+erDiagram
+  COMPONENT }|--|| HOOK: "use<Service>(...)"
+  CONTEXT ||--|| HOOK: "use<Service>(...)"
+  COMPONENT }|--|| CONTEXT: "useContext(...)"
+  HOOK ||--|| SERVICE: "useState(...)"
+  CONTEXT |{--|| LOCATOR: "get<Service>(...)"
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Services
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+A Service represents a single responsibilty. Abstraction levels can vary,
+e.g. a HttpService and a ApiService.
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+Each service has:
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+- A root directory under `src/services`.
+- A `<service>.types.ts` that holds the Interface definition.
+- A `impl/` subdirectory containing concrete implementations of the Service.
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+Each Services' folder is generic enough to be copied and used in multiple
+projects without modification.
 
-## Learn More
+### Example Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+src
+└── services
+    └── AuthService
+        ├── AuthService.types.ts
+        └── impl
+            ├── GoogleAuthService.ts
+            └── FacebookAuthService.ts
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Service Locator
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+## Hooks
 
-## Deploy on Vercel
+Each service has a hook associated with it. A hook is responsible for using
+React function (`useState` etc.) to manage an instance of a Service in a way
+that keeps React UI in sync with any stateful changes to the Service instance.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Example: You have a select input in React where you can choose from different
+API hosts. Selecting a host uses the hook to call a `setHost` function on an
+`ApiService` instance as well as internally manage a `useState` to keep track
+of the currently chosen host. A React text component then uses the same hook
+to always show an up-to-date value of the current host.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+Hooks reside under `src/hooks` and
+are named `use<Service>.ts` (e.g. `useAuthService.ts`).
+
+## Contexts & Providers
+
+Contexts and Providers are a way of providing a pseudo-global instance of a Service
+through the use of the service's hook. It's the same principle as using the hook
+directly except the lifecycle management of the service instance is hidden away
+further up the component tree and every consumer of the context (using React's
+`useContext(...)` call) use the same instance.
+
+Note that `useContext(..)` uses the instance closest up the tree, so if multiple are
+present only the nearest is used, which can be used to selectively override a service
+deeper down the component hierarchy.
+
+Contexts and providers are located under `src/contexts` and are named
+`<Service>Context.tsx` (e.g. `AuthServiceContext.tsx`). Each context file exports
+the context itself (the output of a React `createContext(..)` call) and the provider
+that should be used to build the component tree.
+
+Providers are ordered by their dependencies to each other (if any) and are usually the
+top-most components in a React app, for example:
+
+```html
+<ServiceLocatorProvider>
+  <EnvironmentProvider>
+    <AuthServiceProvider>...</AuthServiceProvider>
+  </EnvironmentProvider>
+</ServiceLocatorProvider>
+```
+
+In this project all providers are exposed together as the
+`src/components/organisms/Providers` component.
+
+# Showcase
+
+- [ ] ServiceLocator
+  - [ ] type safety
+- [ ] Portability (symlink test)
+- [ ] Hot-swap services
+- [ ] Hooks
+  - [ ] Isolering från ServiceLocator
+- [ ] Contexts/Providers
+- [ ] Service dependencies
+
+# Issues
+
+- Using `ApiViewCountService` and logging in/out does not trigger a refresh of the View Count UI.
+  - This is sort of intentional? The only hard connection between `Auth` and `ViewCount` is done at Service-level, meaning no React component can possibly know that `ViewCount` state is dependent on `Auth` state.
+  - Possibly solve by explicit refresh when `Auth` state changes (i.e. switching "screen" after a login or re-mounting `ViewCount` UI).

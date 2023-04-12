@@ -1,91 +1,56 @@
-import Image from 'next/image'
-import { Inter } from 'next/font/google'
-import styles from './page.module.css'
+import Group from "../components/atoms/Group/Group";
+import LoginInput from "../components/molecules/LoginInput/LoginInput";
+import ServiceLister from "../components/molecules/ServiceLister/ServiceLister";
+import ViewCount from "../components/molecules/ViewCount/ViewCount";
+import ViewCountSolo from "../components/molecules/ViewCountSolo/ViewCountSolo";
+import CustomViewCountProvider from "../components/organisms/CustomViewCountProvider/CustomViewCountProvider";
+import Providers from "../components/organisms/Providers/Providers";
+import ServiceSwitchers from "../components/organisms/ServiceSwitchers/ServiceSwitchers";
 
-const inter = Inter({ subsets: ['latin'] })
-
-export default function Home() {
+export default function Home(): JSX.Element {
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+    <Providers>
+      <main>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 20,
+            padding: 20,
+          }}
+        >
+          <Group title="Change Service at Runtime">
+            <ServiceLister />
+            <ServiceSwitchers />
+            <ViewCount />
+          </Group>
+          <Group title="Using Global Service instance">
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <ServiceLister />
+              <LoginInput />
+              <ViewCount />
+            </div>
+          </Group>
+          <Group title="Context Override">
+            <CustomViewCountProvider>
+              <ServiceLister />
+              <span>
+                The ViewCount component using the nearest context provider,
+                which is being overridden by its parent so it is not same as the
+                global.
+              </span>
+              <ViewCount />
+            </CustomViewCountProvider>
+          </Group>
+          <Group title="Isolated Hook">
+            <span>
+              A variant of the ViewCount component using its own
+              useViewCountService hook instead of the global context.
+            </span>
+            <ViewCountSolo />
+          </Group>
         </div>
-      </div>
-
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-        <div className={styles.thirteen}>
-          <Image src="/thirteen.svg" alt="13" width={40} height={31} priority />
-        </div>
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://beta.nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={inter.className}>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p className={inter.className}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={inter.className}>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p className={inter.className}>Explore the Next.js 13 playground.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={inter.className}>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p className={inter.className}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  )
+      </main>
+    </Providers>
+  );
 }
